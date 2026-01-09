@@ -6,6 +6,8 @@ import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import Home from './pages/user/Home';
 import ProfilePage from './pages/user/Profile';
+import Product from './pages/user/Product';
+import ProductDetail from './pages/user/ProductDetail';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
@@ -42,6 +44,8 @@ function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
           <Route path='profile' element={< ProfilePage />} />
+          <Route path='products' element={< Product />} />
+          <Route path="product/:slug" element={<ProductDetail />} />
         </Route>
 
         {/* ROUTES ADMIN: Cần bảo vệ */}

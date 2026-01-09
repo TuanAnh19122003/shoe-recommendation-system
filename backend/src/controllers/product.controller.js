@@ -119,6 +119,45 @@ class ProductController {
             });
         }
     }
+
+    async getHomeProducts(req, res) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const pageSize = 8; // Mặc định 8 sản phẩm mỗi trang cho đẹp
+            const offset = (page - 1) * pageSize;
+
+            const result = await ProductService.getAllProductsHome({
+                offset,
+                limit: pageSize,
+                search: req.query.search
+            });
+
+            res.status(200).json({
+                success: true,
+                data: result.rows,
+                total: result.count
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async getProductBySlug(req, res) {
+        try {
+            const { slug } = req.params;
+            const product = await ProductService.getProductBySlug(slug);
+
+            res.status(200).json({
+                success: true,
+                data: product
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 }
 
 module.exports = new ProductController();
