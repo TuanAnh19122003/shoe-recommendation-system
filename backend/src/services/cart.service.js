@@ -1,4 +1,4 @@
-const { Cart, CartItem, ProductVariant } = require('../models');
+const { Cart, CartItem, ProductVariant, User, Product } = require('../models');
 
 class CartService {
     // ==========================================
@@ -64,21 +64,36 @@ class CartService {
     static async getCartByUserId(userId) {
         const cart = await Cart.findOne({
             where: { user_id: userId },
+            attributes: ['id'], // Chỉ lấy ID của giỏ hàng
             include: [
                 {
+                    model: User,
+                    as: 'user',
+                    attributes: ['first_name', 'last_name'] // Hiện người dùng nào
+                },
+                {
                     model: CartItem,
-                    as: 'items', // Phải khớp với alias trong initRelationships
+                    as: 'items',
+                    attributes: ['id', 'quantity'],
                     include: [
                         {
                             model: ProductVariant,
-                            as: 'variant'
+                            as: 'variant',
+                            attributes: ['size', 'color', 'price'],
+                            include: [
+                                {
+                                    model: Product,
+                                    as: 'product',
+                                    attributes: ['name'] // Hiện sản phẩm nào
+                                }
+                            ]
                         }
                     ]
                 }
             ]
         });
 
-        return cart ? cart.items : [];
+        return cart;
     }
 
     // ==========================================

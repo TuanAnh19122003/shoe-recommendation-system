@@ -40,6 +40,24 @@ class UserController {
         }
     }
 
+    async getById(req, res){
+        try {
+            const id = req.params.id;
+            const user = await UserService.getUserById(id);
+            res.status(200).json({
+                success: true,
+                message: 'Get user by id successfully',
+                data: user
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'An error occurred while fetching the user',
+                error: error.message
+            });
+        }
+    }
+
     async create(req, res) {
         try {
             const data = await UserService.createUser(req.body, req.file);

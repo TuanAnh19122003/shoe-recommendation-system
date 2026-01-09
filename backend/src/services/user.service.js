@@ -12,8 +12,8 @@ class UserService {
         if (search) {
             const { Op } = require('sequelize');
             whereClause[Op.or] = [
-                { lastname: { [Op.like]: `%${search}%` } },
-                { firstname: { [Op.like]: `%${search}%` } },
+                { last_name: { [Op.like]: `%${search}%` } },
+                { first_name: { [Op.like]: `%${search}%` } },
                 { email: { [Op.like]: `%${search}%` } },
                 { phone: { [Op.like]: `%${search}%` } },
             ];
@@ -28,7 +28,7 @@ class UserService {
             },
             offset,
             limit,
-            order: [['createdAt', 'ASC']]
+            order: [['created_at', 'ASC']]
         };
 
         const users = await User.findAndCountAll(queryOptions);

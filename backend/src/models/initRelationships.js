@@ -1,36 +1,68 @@
 module.exports = (db) => {
-    const { Role, User, Product, ProductVariant, Cart, CartItem, Order, OrderItem, UserBehavior } = db;
+    const { Role, User, Product, ProductVariant, Cart, CartItem, Order, OrderItem } = db;
 
-    const fk = (name, allowNull = false, onDelete = 'CASCADE') => ({
-        foreignKey: { name, allowNull },
-        onDelete,
+    /**
+     * Hàm helper để tạo cấu hình quan hệ đồng nhất
+     * @param {string} name - Tên cột khóa ngoại (foreign key)
+     * @param {string} alias - Tên định danh quan hệ (as)
+     * @param {boolean} allowNull - Cho phép null hay không
+     * @param {string} onDelete - Hành động khi xóa (CASCADE, SET NULL,...)
+     */
+    const config = (name, alias, allowNull = false, onDelete = 'CASCADE') => ({
+        foreignKey: name,
+        as: alias,
+        allowNull: allowNull,
+        onDelete: onDelete,
         onUpdate: 'CASCADE'
     });
 
-    // Relationships
-    Role.hasMany(User, fk('role_id', true, 'SET NULL'), { as: 'users' });
-    User.belongsTo(Role, fk('role_id', true, 'SET NULL'), { as: 'role' });
+    // ==========================================
+    // 1. ROLE & USER
+    // ==========================================
+    Role.hasMany(User, config('role_id', 'users', true, 'SET NULL'));
+    User.belongsTo(Role, config('role_id', 'role', true, 'SET NULL'));
 
-    Product.hasMany(ProductVariant, fk('product_id'), { as: 'variants' });
-    ProductVariant.belongsTo(Product, fk('product_id'), { as: 'product' });
+    // ==========================================
+    // 2. PRODUCT & VARIANT
+    // ==========================================
+    Product.hasMany(ProductVariant, config('product_id', 'variants'));
+    ProductVariant.belongsTo(Product, config('product_id', 'product'));
 
-    User.hasOne(Cart, fk('user_id'), { as: 'cart' });
-    Cart.belongsTo(User, fk('user_id'), { as: 'user' });
+    // ==========================================
+    // 3. USER & CART
+    // ==========================================
+    User.hasOne(Cart, config('user_id', 'cart'));
+    Cart.belongsTo(User, config('user_id', 'user'));
 
-    Cart.hasMany(CartItem, fk('cart_id'), { as: 'items' });
-    CartItem.belongsTo(Cart, fk('cart_id'), { as: 'cart' });
+    // ==========================================
+    // 4. CART & CART_ITEM
+    // ==========================================
+    Cart.hasMany(CartItem, config('cart_id', 'items'));
+    CartItem.belongsTo(Cart, config('cart_id', 'cart'));
 
-    ProductVariant.hasMany(CartItem, fk('variant_id'), { as: 'cart_items' });
-    CartItem.belongsTo(ProductVariant, fk('variant_id'), { as: 'variant' });
+    // ==========================================
+    // 5. VARIANT & CART_ITEM
+    // ==========================================
+    ProductVariant.hasMany(CartItem, config('variant_id', 'cart_items'));
+    CartItem.belongsTo(ProductVariant, config('variant_id', 'variant'));
 
-    User.hasMany(Order, fk('user_id'), { as: 'orders' });
-    Order.belongsTo(User, fk('user_id'), { as: 'user' });
+    // ==========================================
+    // 6. USER & ORDER
+    // ==========================================
+    User.hasMany(Order, config('user_id', 'orders'));
+    Order.belongsTo(User, config('user_id', 'user'));
 
-    Order.hasMany(OrderItem, fk('order_id'), { as: 'items' });
-    OrderItem.belongsTo(Order, fk('order_id'), { as: 'order' });
+    // ==========================================
+    // 7. ORDER & ORDER_ITEM
+    // ==========================================
+    Order.hasMany(OrderItem, config('order_id', 'items'));
+    OrderItem.belongsTo(Order, config('order_id', 'order'));
 
-    ProductVariant.hasMany(OrderItem, fk('variant_id'), { as: 'order_items' });
-    OrderItem.belongsTo(ProductVariant, fk('variant_id'), { as: 'variant' });
+    // ==========================================
+    // 8. VARIANT & ORDER_ITEM
+    // ==========================================
+    ProductVariant.hasMany(OrderItem, config('variant_id', 'order_items'));
+    OrderItem.belongsTo(ProductVariant, config('variant_id', 'variant'));
 
     console.log('✔ All relationships initialized successfully');
 };
