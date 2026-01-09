@@ -75,7 +75,7 @@ const AdminSidebar = () => {
             <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
                 <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/admin" />
 
-                {/* Quản lý Người dùng - Chỉ sáng khi url là /admin/users hoặc /admin/roles */}
+                
                 <SidebarGroup
                     icon={Users}
                     label="Quản lý Người dùng"
@@ -85,14 +85,14 @@ const AdminSidebar = () => {
                     <SidebarItem icon={ShieldCheck} label="Phân quyền" to="/admin/roles" isChild />
                 </SidebarGroup>
 
-                {/* Quản lý Sản phẩm - Chỉ sáng khi url là /admin/products hoặc /admin/variants */}
+                
                 <SidebarGroup
                     icon={Package}
                     label="Quản lý Sản phẩm"
                     activeUrls={['/admin/products', '/admin/variants']}
                 >
                     <SidebarItem icon={Box} label="Sản phẩm" to="/admin/products" isChild />
-                    <SidebarItem icon={Layers} label="Biến thể (Variant)" to="/admin/variants" isChild />
+                    <SidebarItem icon={Layers} label="Biến thể (Variant)" to="variants" isChild />
                 </SidebarGroup>
 
                 <SidebarItem icon={ShoppingCart} label="Quản lý Đơn hàng" to="/admin/orders" />

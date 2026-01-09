@@ -10,6 +10,7 @@ import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
 import UserPage from './pages/admin/user/UserPage';
 import ProductPage from './pages/admin/product/ProductPage';
+import VariantPage from './pages/admin/product-variant/VariantPage';
 
 function App() {
   return (
@@ -23,9 +24,10 @@ function App() {
         {/* === ROUTES ADMIN === */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path='roles' element={<RolePage />} />
-          <Route path='users' element={<UserPage />} />
+          <Route path='roles' element={< RolePage />} />
+          <Route path='users' element={< UserPage />} />
           <Route path='products' element={< ProductPage />} />
+          <Route path='variants' element={< VariantPage />} />
         </Route>
 
         {/* 404 & Redirect */}
