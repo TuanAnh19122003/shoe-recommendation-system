@@ -79,42 +79,60 @@ class AuthService {
             email: user.email
         };
     }
-    
+
     static async updateProfile(id, data, file) {
-        const user = await User.findOne({ where: { id } });
+        // 1. Tìm user hiện tại
+        const user = await User.findOne({
+            where: { id },
+            include: {
+                model: Role,
+                as: 'role',
+                attributes: ['id', 'name', 'code']
+            }
+        });
+
         if (!user) throw new Error('Người dùng không tồn tại');
 
-        // --- 1. Xử lý đổi mật khẩu ---
+        // --- Xử lý đổi mật khẩu ---
         if (data.newPassword) {
-            // Kiểm tra mật khẩu cũ
             if (!data.oldPassword) throw new Error('Vui lòng nhập mật khẩu cũ');
-
             const isMatch = await checkPassword(data.oldPassword, user.password);
             if (!isMatch) throw new Error('Mật khẩu cũ không chính xác');
-
-            // Hash mật khẩu mới và gán vào object data để update
             data.password = await hashPassword(data.newPassword);
         } else {
-            // Nếu không gửi newPassword thì xóa trường password khỏi data để tránh ghi đè
             delete data.password;
         }
 
-        // --- 2. Xử lý hình ảnh (Giống logic bạn đưa ra) ---
+        // --- Xử lý hình ảnh ---
         if (file) {
             if (user.image) {
-                // Đường dẫn tới ảnh cũ
                 const oldImagePath = path.join(__dirname, '..', user.image);
-                // Xóa file cũ nếu tồn tại
                 if (fs.existsSync(oldImagePath)) {
                     fs.unlinkSync(oldImagePath);
                 }
             }
-            // Lưu đường dẫn ảnh mới
             data.image = `uploads/${file.filename}`;
         }
 
+        // --- Cập nhật database ---
+        // Ánh xạ lại tên cột nếu data gửi lên từ frontend là firstname/lastname
+        const updatePayload = {
+            first_name: data.firstname || user.first_name,
+            last_name: data.lastname || user.last_name,
+            image: data.image || user.image,
+            ...(data.password && { password: data.password })
+        };
 
-        await user.update(data);
+        await user.update(updatePayload);
+
+        // 👉 QUAN TRỌNG: Load lại dữ liệu mới nhất kèm Role
+        await user.reload({
+            include: {
+                model: Role,
+                as: 'role',
+                attributes: ['id', 'name', 'code']
+            }
+        });
 
         return {
             id: user.id,
@@ -122,7 +140,7 @@ class AuthService {
             lastname: user.last_name,
             email: user.email,
             image: user.image,
-            role: user.role 
+            role: user.role // Bây giờ role đã chắc chắn tồn tại
         };
     }
 }

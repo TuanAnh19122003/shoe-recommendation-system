@@ -61,7 +61,7 @@ const ProfilePage = () => {
     return (
         <div className="min-h-screen bg-[#f3f4f6] py-12 px-4 flex justify-center items-start">
             <div className="w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 overflow-hidden border border-white">
-                
+
                 {/* Header Profile - Tối giản khoảng trắng */}
                 <div className="relative h-32 bg-linear-to-r from-blue-600 to-indigo-700">
                     <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
