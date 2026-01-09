@@ -84,7 +84,7 @@ class CartService {
                                 {
                                     model: Product,
                                     as: 'product',
-                                    attributes: ['name'] // Hiện sản phẩm nào
+                                    attributes: ['name','image'] // Hiện sản phẩm nào
                                 }
                             ]
                         }

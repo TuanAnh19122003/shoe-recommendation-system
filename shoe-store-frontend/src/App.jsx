@@ -8,6 +8,7 @@ import Home from './pages/user/Home';
 import ProfilePage from './pages/user/Profile';
 import Product from './pages/user/Product';
 import ProductDetail from './pages/user/ProductDetail';
+import Cart from './pages/user/Cart';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
@@ -46,6 +47,7 @@ function App() {
           <Route path='profile' element={< ProfilePage />} />
           <Route path='products' element={< Product />} />
           <Route path="product/:slug" element={<ProductDetail />} />
+          <Route path='cart' element={< Cart />} />
         </Route>
 
         {/* ROUTES ADMIN: Cần bảo vệ */}
