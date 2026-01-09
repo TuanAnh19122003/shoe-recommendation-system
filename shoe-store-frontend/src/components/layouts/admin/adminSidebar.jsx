@@ -2,21 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, ShoppingCart, Package, Users, LogOut,
-    ChevronRight, ChevronDown, ShieldCheck, UserCircle, Layers, Box
+    ChevronRight, ChevronDown, ShieldCheck, UserCircle, Layers, Box,
+    Store // Chỉ import các icon thực sự từ thư viện
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
-const SidebarItem = ({ icon: Icon, label, to, isChild = false }) => {
+// 1. Thành phần SidebarItem (Tự định nghĩa)
+const SidebarItem = ({ icon: Icon, label, to, isChild = false, variant = "default" }) => {
     const location = useLocation();
-    // Kiểm tra active chính xác hoặc theo tiền tố đường dẫn
     const isActive = location.pathname === to;
+
+    const activeStyles = variant === "store" 
+        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
+        : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20';
 
     return (
         <Link
             to={to}
             className={`flex items-center justify-between p-3 rounded-xl transition-all mb-1 ${isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                    : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
+                ? activeStyles
+                : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
                 } ${isChild ? 'ml-9 py-2 text-sm' : ''}`}
         >
             <div className="flex items-center gap-3">
@@ -28,13 +33,12 @@ const SidebarItem = ({ icon: Icon, label, to, isChild = false }) => {
     );
 };
 
+// 2. Thành phần SidebarGroup (Tự định nghĩa - Đây là lý do gây lỗi nếu bạn import từ thư viện)
 const SidebarGroup = ({ icon: Icon, label, children, activeUrls = [] }) => {
     const location = useLocation();
-    // Group chỉ sáng "nhẹ" khi có con đang active
     const isAnyChildActive = activeUrls.some(url => location.pathname === url);
     const [isOpen, setIsOpen] = useState(isAnyChildActive);
 
-    // Tự động mở group nếu truy cập trực tiếp từ URL
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (isAnyChildActive) setIsOpen(true);
@@ -63,7 +67,18 @@ const SidebarGroup = ({ icon: Icon, label, children, activeUrls = [] }) => {
     );
 };
 
+// 3. Thành phần chính AdminSidebar
 const AdminSidebar = () => {
+    const navigate = useNavigate();
+    
+    const handleLogout = () => {
+        if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/auth/login');
+        }
+    };
+
     return (
         <aside className="w-64 bg-gray-950 h-screen flex flex-col sticky top-0 z-50 border-r border-gray-800">
             <div className="p-6">
@@ -73,33 +88,48 @@ const AdminSidebar = () => {
             </div>
 
             <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
-                <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/admin" />
+                {/* Mục quay lại trang chủ */}
+                <div className="mb-6">
+                    <p className="px-3 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-2">Hệ thống</p>
+                    <SidebarItem 
+                        icon={Store} 
+                        label="Xem cửa hàng" 
+                        to="/" 
+                        variant="store" 
+                    />
+                </div>
 
-                
-                <SidebarGroup
-                    icon={Users}
-                    label="Quản lý Người dùng"
-                    activeUrls={['/admin/users', '/admin/roles']}
-                >
-                    <SidebarItem icon={UserCircle} label="Tài khoản" to="/admin/users" isChild />
-                    <SidebarItem icon={ShieldCheck} label="Phân quyền" to="/admin/roles" isChild />
-                </SidebarGroup>
+                <div className="mb-4">
+                    <p className="px-3 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-2">Quản lý chính</p>
+                    <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/admin" />
 
-                
-                <SidebarGroup
-                    icon={Package}
-                    label="Quản lý Sản phẩm"
-                    activeUrls={['/admin/products', '/admin/variants']}
-                >
-                    <SidebarItem icon={Box} label="Sản phẩm" to="/admin/products" isChild />
-                    <SidebarItem icon={Layers} label="Biến thể (Variant)" to="variants" isChild />
-                </SidebarGroup>
+                    <SidebarGroup
+                        icon={Users}
+                        label="Người dùng"
+                        activeUrls={['/admin/users', '/admin/roles']}
+                    >
+                        <SidebarItem icon={UserCircle} label="Tài khoản" to="/admin/users" isChild />
+                        <SidebarItem icon={ShieldCheck} label="Phân quyền" to="/admin/roles" isChild />
+                    </SidebarGroup>
 
-                <SidebarItem icon={ShoppingCart} label="Quản lý Đơn hàng" to="/admin/orders" />
+                    <SidebarGroup
+                        icon={Package}
+                        label="Sản phẩm"
+                        activeUrls={['/admin/products', '/admin/variants']}
+                    >
+                        <SidebarItem icon={Box} label="Danh sách" to="/admin/products" isChild />
+                        <SidebarItem icon={Layers} label="Biến thể" to="/admin/variants" isChild />
+                    </SidebarGroup>
+
+                    <SidebarItem icon={ShoppingCart} label="Đơn hàng" to="/admin/orders" />
+                </div>
             </nav>
 
             <div className="p-4 border-t border-gray-800">
-                <button className="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-medium group">
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-medium group"
+                >
                     <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
                     <span>Đăng xuất</span>
                 </button>
