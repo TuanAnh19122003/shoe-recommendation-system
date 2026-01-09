@@ -8,6 +8,7 @@ import Home from './pages/user/Home';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
+import UserPage from './pages/admin/user/UserPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path='roles' element={<RolePage />} />
+          <Route path='users' element={<UserPage />}/>
         </Route>
 
         {/* 404 & Redirect */}

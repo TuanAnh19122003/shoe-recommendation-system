@@ -1,5 +1,5 @@
 import React from 'react';
-import AdminListItem from '../../../components/AdminListItem';
+import AdminListItem from '../../../components/layouts/admin/AdminListItem';
 
 // Component tạo hiệu ứng ảo ảnh khi đang tải
 const RoleSkeleton = ({ viewMode }) => (
