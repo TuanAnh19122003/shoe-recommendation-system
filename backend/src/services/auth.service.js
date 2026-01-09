@@ -47,6 +47,7 @@ class AuthService {
                 firstname: user.first_name,
                 lastname: user.last_name,
                 email: user.email,
+                phone: user.phone,
                 role: user.role,
                 image: user.image
             }

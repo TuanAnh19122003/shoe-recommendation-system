@@ -1,5 +1,5 @@
 const OrderService = require('../services/order.service');
-const { Order, User } = require('../models');
+const { Order, User, OrderItem, ProductVariant, Product } = require('../models');
 
 class OrderController {
     // Lấy tất cả đơn hàng (Cho trang quản lý)
@@ -57,7 +57,16 @@ class OrderController {
             const userId = req.user.id;
             const orders = await Order.findAll({
                 where: { user_id: userId },
-                order: [['created_at', 'DESC']]
+                include: [{
+                    model: OrderItem,
+                    as: 'items',
+                    include: [{
+                        model: ProductVariant,
+                        as: 'variant',
+                        include: [{ model: Product, as: 'product' }]
+                    }]
+                }],
+                order: [['createdAt', 'DESC']]
             });
             res.status(200).json({ success: true, data: orders });
         } catch (error) {

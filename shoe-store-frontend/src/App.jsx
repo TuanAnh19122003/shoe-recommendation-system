@@ -9,6 +9,8 @@ import ProfilePage from './pages/user/Profile';
 import Product from './pages/user/Product';
 import ProductDetail from './pages/user/ProductDetail';
 import Cart from './pages/user/Cart';
+import Checkout from './pages/user/Checkout';
+import MyOrders from './pages/user/MyOrders';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
@@ -48,6 +50,8 @@ function App() {
           <Route path='products' element={< Product />} />
           <Route path="product/:slug" element={<ProductDetail />} />
           <Route path='cart' element={< Cart />} />
+          <Route path='checkout' element={< Checkout />} />
+          <Route path='my-orders' element={< MyOrders />} />
         </Route>
 
         {/* ROUTES ADMIN: Cần bảo vệ */}

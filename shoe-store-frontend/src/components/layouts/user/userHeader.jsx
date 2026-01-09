@@ -2,21 +2,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     ShoppingBag, User, Search, Menu, Settings,
-    LogOut, Package, UserCircle, X, Home, ChevronRight
+    LogOut, Package, UserCircle, X, Home, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useCart } from '../../../context/CartContext'; // Đảm bảo đúng đường dẫn
+import { useCart } from '../../../context/CartContext';
 
 const UserHeader = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { cartCount, updateCartCount } = useCart(); // Lấy data từ Context
+    const { cartCount, updateCartCount } = useCart();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    // Cập nhật lại số lượng mỗi khi chuyển trang để đảm bảo dữ liệu mới nhất
     useEffect(() => {
         updateCartCount();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.pathname]);
 
     const user = useMemo(() => {
@@ -94,7 +93,7 @@ const UserHeader = () => {
                                         </span>
                                     </button>
 
-                                    <div className="absolute right-0 mt-0 w-56 bg-white border border-gray-100 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-2 transition-all duration-300 z-50 overflow-hidden">
+                                    <div className="absolute right-0 mt-0 w-60 bg-white border border-gray-100 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-2 transition-all duration-300 z-50 overflow-hidden">
                                         <div className="p-4 bg-gray-50/50 border-b border-gray-50">
                                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Đăng nhập với</p>
                                             <p className="text-sm font-bold truncate text-gray-800">{user.email}</p>
@@ -107,6 +106,10 @@ const UserHeader = () => {
                                             )}
                                             <Link to="/profile" className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
                                                 <UserCircle size={18} /> Hồ sơ cá nhân
+                                            </Link>
+                                            {/* THÊM VÀO ĐÂY: ĐƠN HÀNG CỦA TÔI TRÊN DESKTOP */}
+                                            <Link to="/my-orders" className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
+                                                <ClipboardList size={18} /> Đơn hàng của tôi
                                             </Link>
                                             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors">
                                                 <LogOut size={18} /> Đăng xuất
@@ -141,6 +144,8 @@ const UserHeader = () => {
 
                         <div className="pt-6 pb-2 px-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Cá nhân</div>
                         <MobileNavLink to="/profile" icon={UserCircle} label="Hồ sơ của tôi" onClick={closeMenu} />
+                        {/* THÊM VÀO ĐÂY: ĐƠN HÀNG CỦA TÔI TRÊN MOBILE */}
+                        <MobileNavLink to="/my-orders" icon={ClipboardList} label="Đơn hàng đã đặt" onClick={closeMenu} />
                         <MobileNavLink to="/cart" icon={ShoppingBag} label={`Giỏ hàng (${cartCount})`} onClick={closeMenu} />
 
                         {user?.role?.code === 'admin' && (
