@@ -34,6 +34,26 @@ class AuthController {
             });
         }
     }
+
+    async updateProfile(req, res) {
+        try {
+            const userId = req.user.id; // Lấy từ authMiddleware
+            const file = req.file;      // Lấy từ multer
+
+            const updatedUser = await AuthService.updateProfile(userId, req.body, file);
+
+            res.status(200).json({
+                success: true,
+                message: 'Cập nhật hồ sơ thành công',
+                user: updatedUser
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 }
 
 module.exports = new AuthController();
