@@ -1,4 +1,5 @@
 const ProductVariant = require('../models/product_variant.model');
+const Product = require('../models/product.model');
 
 class ProductVariantService {
 
@@ -12,6 +13,11 @@ class ProductVariantService {
 
         const queryOptions = {
             where: whereClause,
+            include:{
+                model: Product,
+                as: 'product',
+                attributes: ['id', 'name']
+            },
             offset,
             limit,
             order: [['id', 'ASC']]
@@ -21,7 +27,13 @@ class ProductVariantService {
     }
 
     static async getVariantById(id) {
-        const variant = await ProductVariant.findByPk(id);
+        const variant = await ProductVariant.findByPk(id,{
+            include:{
+                model: Product,
+                as: 'product',
+                attributes: ['id', 'name']
+            },
+        });
         if (!variant) throw new Error('Product variant not found');
         return variant;
     }

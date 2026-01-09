@@ -7,6 +7,8 @@ const Cart = require('./cart.model');
 const CartItem = require('./cart_item.model');
 const Order = require('./order.model');
 const OrderItem = require('./order_item.model');
+const UserBehavior = require('./userBehavior.model');
+const initRelationships = require('./initRelationships');
 
 const db = {
     Role,
@@ -17,18 +19,19 @@ const db = {
     CartItem,
     Order,
     OrderItem,
+    UserBehavior,
     sequelize
-}
+};
 
-require('./initRelationships')(db);
+// Khởi tạo các quan hệ
+initRelationships(db);
 
 sequelize.sync({ force: false })
     .then(() => {
-        console.log('Connection successful');
+        console.log('Database & tables synced successfully');
     })
     .catch((error) => {
-        console.error('Connection error:', error);
-        throw error;
+        console.error('Sequelize sync error:', error);
     });
 
 module.exports = db;
