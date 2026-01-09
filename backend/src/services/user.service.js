@@ -12,12 +12,10 @@ class UserService {
         if (search) {
             const { Op } = require('sequelize');
             whereClause[Op.or] = [
-                { id: { [Op.like]: `%${search}%` } },
                 { lastname: { [Op.like]: `%${search}%` } },
                 { firstname: { [Op.like]: `%${search}%` } },
                 { email: { [Op.like]: `%${search}%` } },
                 { phone: { [Op.like]: `%${search}%` } },
-                { is_active: { [Op.like]: `%${search}%` } },
             ];
         }
 
