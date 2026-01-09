@@ -12,8 +12,8 @@ const SidebarItem = ({ icon: Icon, label, to, isChild = false, variant = "defaul
     const location = useLocation();
     const isActive = location.pathname === to;
 
-    const activeStyles = variant === "store" 
-        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
+    const activeStyles = variant === "store"
+        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
         : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20';
 
     return (
@@ -70,7 +70,7 @@ const SidebarGroup = ({ icon: Icon, label, children, activeUrls = [] }) => {
 // 3. Thành phần chính AdminSidebar
 const AdminSidebar = () => {
     const navigate = useNavigate();
-    
+
     const handleLogout = () => {
         if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
             localStorage.removeItem('token');
@@ -82,20 +82,24 @@ const AdminSidebar = () => {
     return (
         <aside className="w-64 bg-gray-950 h-screen flex flex-col sticky top-0 z-50 border-r border-gray-800">
             <div className="p-6">
-                <div className="bg-blue-600/10 p-3 rounded-2xl border border-blue-600/20">
-                    <h2 className="text-blue-500 font-black text-xl text-center tracking-tighter">SHOE ADMIN</h2>
-                </div>
+                <Link to="/admin" className="block group">
+                    <div className="bg-blue-600/10 p-3 rounded-2xl border border-blue-600/20 group-hover:bg-blue-600/20 group-hover:border-blue-600/30 transition-all duration-300">
+                        <h2 className="text-blue-500 font-black text-xl text-center tracking-tighter group-hover:scale-105 transition-transform">
+                            SHOE ADMIN
+                        </h2>
+                    </div>
+                </Link>
             </div>
 
             <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
                 {/* Mục quay lại trang chủ */}
                 <div className="mb-6">
                     <p className="px-3 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-2">Hệ thống</p>
-                    <SidebarItem 
-                        icon={Store} 
-                        label="Xem cửa hàng" 
-                        to="/" 
-                        variant="store" 
+                    <SidebarItem
+                        icon={Store}
+                        label="Xem cửa hàng"
+                        to="/"
+                        variant="store"
                     />
                 </div>
 
@@ -108,8 +112,8 @@ const AdminSidebar = () => {
                         label="Người dùng"
                         activeUrls={['/admin/users', '/admin/roles']}
                     >
-                        <SidebarItem icon={UserCircle} label="Tài khoản" to="/admin/users" isChild />
-                        <SidebarItem icon={ShieldCheck} label="Phân quyền" to="/admin/roles" isChild />
+                        <SidebarItem icon={UserCircle} label="Tài khoản" to="users" isChild />
+                        <SidebarItem icon={ShieldCheck} label="Phân quyền" to="roles" isChild />
                     </SidebarGroup>
 
                     <SidebarGroup
@@ -117,11 +121,11 @@ const AdminSidebar = () => {
                         label="Sản phẩm"
                         activeUrls={['/admin/products', '/admin/variants']}
                     >
-                        <SidebarItem icon={Box} label="Danh sách" to="/admin/products" isChild />
-                        <SidebarItem icon={Layers} label="Biến thể" to="/admin/variants" isChild />
+                        <SidebarItem icon={Box} label="Danh sách" to="products" isChild />
+                        <SidebarItem icon={Layers} label="Biến thể" to="variants" isChild />
                     </SidebarGroup>
 
-                    <SidebarItem icon={ShoppingCart} label="Đơn hàng" to="/admin/orders" />
+                    <SidebarItem icon={ShoppingCart} label="Đơn hàng" to="orders" />
                 </div>
             </nav>
 

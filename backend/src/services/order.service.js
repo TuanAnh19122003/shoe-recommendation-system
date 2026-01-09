@@ -4,48 +4,57 @@ class OrderService {
     // ==========================================
     // LẤY TẤT CẢ ĐƠN HÀNG (Dành cho Admin)
     // ==========================================
-    static async getAllOrdersAdmin(query) {
-        const { status, page = 1, limit = 10 } = query;
-        const offset = (page - 1) * limit;
+    static async getAllOrdersAdmin(options = {}) {
+        const { offset, limit, search, status } = options;
 
         const whereClause = {};
-        if (status) whereClause.status = status;
 
-        const { count, rows } = await Order.findAndCountAll({
+        // Lọc theo trạng thái đơn hàng
+        if (status && status !== 'all') {
+            whereClause.status = status;
+        }
+
+        // Tìm kiếm theo tên khách hàng, số điện thoại hoặc email (giống logic user)
+        if (search) {
+            whereClause[Op.or] = [
+                { customer_name: { [Op.like]: `%${search}%` } },
+                { phone_number: { [Op.like]: `%${search}%` } },
+                { address: { [Op.like]: `%${search}%` } },
+            ];
+        }
+
+        const queryOptions = {
             where: whereClause,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [['created_at', 'DESC']],
             include: [
                 {
                     model: User,
-                    as: 'user', // Khớp với config('user_id', 'user') trong file bạn gửi
+                    as: 'user',
                     attributes: ['first_name', 'last_name', 'email']
                 },
                 {
                     model: OrderItem,
-                    as: 'items', // Khớp với config('order_id', 'items')
+                    as: 'items',
                     include: [{
                         model: ProductVariant,
-                        as: 'variant', // Khớp với config('variant_id', 'variant')
+                        as: 'variant',
                         attributes: ['size', 'color'],
-                        include: [{ 
-                            model: Product, 
-                            as: 'product', // Khớp với config('product_id', 'product')
-                            attributes: ['name'] 
+                        include: [{
+                            model: Product,
+                            as: 'product',
+                            attributes: ['name']
                         }]
                     }]
                 }
             ],
-            distinct: true 
-        });
-
-        return {
-            totalItems: count,
-            totalPages: Math.ceil(count / limit),
-            currentPage: parseInt(page),
-            orders: rows
+            offset: offset ? parseInt(offset) : undefined,
+            limit: limit ? parseInt(limit) : undefined,
+            order: [['created_at', 'DESC']],
+            distinct: true // Rất quan trọng khi dùng findAndCountAll kèm với include (HasMany)
         };
+
+        // Trả về { count, rows } trực tiếp giống UserService
+        const orders = await Order.findAndCountAll(queryOptions);
+        return orders;
     }
 
     // ==========================================

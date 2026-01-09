@@ -5,19 +5,49 @@ class OrderController {
     // Lấy tất cả đơn hàng (Cho trang quản lý)
     async getAllOrders(req, res) {
         try {
-            // Gọi service xử lý phân trang và lọc
-            const data = await OrderService.getAllOrdersAdmin(req.query);
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+            const search = req.query.search || null;
+            const status = req.query.status || null;
+
+            let result;
+
+            // Nếu không có phân trang, lấy tất cả theo filter
+            if (!page || !pageSize) {
+                result = await OrderService.getAllOrdersAdmin({ search, status });
+                return res.status(200).json({
+                    success: true,
+                    message: 'Get all orders successfully',
+                    data: result.rows,
+                    total: result.count
+                });
+            }
+
+            // Xử lý phân trang
+            const offset = (page - 1) * pageSize;
+            result = await OrderService.getAllOrdersAdmin({
+                offset,
+                limit: pageSize,
+                search,
+                status
+            });
+
             res.status(200).json({
                 success: true,
-                data: data.orders,
-                pagination: {
-                    total: data.totalItems,
-                    pages: data.totalPages,
-                    current: data.currentPage
-                }
+                message: 'Get all orders successfully',
+                data: result.rows,
+                total: result.count,
+                page,
+                pageSize,
+                totalPages: Math.ceil(result.count / pageSize)
             });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            console.error('Lỗi getAllOrders:', error);
+            res.status(500).json({
+                success: false,
+                message: 'An error occurred while fetching the order list',
+                error: error.message
+            });
         }
     }
 

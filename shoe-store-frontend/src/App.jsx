@@ -12,6 +12,7 @@ import RolePage from './pages/admin/role/RolePage';
 import UserPage from './pages/admin/user/UserPage';
 import ProductPage from './pages/admin/product/ProductPage';
 import VariantPage from './pages/admin/product-variant/VariantPage';
+import OrderPage from './pages/admin/order/OrderPage';
 
 // Component bảo vệ Route Admin
 const AdminRoute = ({ children }) => {
@@ -23,7 +24,7 @@ const AdminRoute = ({ children }) => {
   } catch (e) {
     user = null;
     console.log(e);
-    
+
   }
 
   if (!user || user.role?.code !== 'admin') {
@@ -40,7 +41,7 @@ function App() {
         {/* ROUTES USER: Công khai */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
-          <Route path='profile' element={< ProfilePage />}/>
+          <Route path='profile' element={< ProfilePage />} />
         </Route>
 
         {/* ROUTES ADMIN: Cần bảo vệ */}
@@ -57,6 +58,7 @@ function App() {
           <Route path="users" element={<UserPage />} />
           <Route path="products" element={<ProductPage />} />
           <Route path="variants" element={<VariantPage />} />
+          <Route path='orders' element={< OrderPage />} />
         </Route>
 
         {/* AUTH & OTHERS */}
