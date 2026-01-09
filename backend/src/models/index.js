@@ -2,7 +2,7 @@ const sequelize = require('../config/database');
 const Role = require('./role.model');
 const User = require('./user.model');
 const Product = require('./product.model');
-const ProductVariant = require('./product_variant.model');
+const ProductVariant = require('./product_variant.model'); // Kiểm tra lại tên file có dấu _ không
 const Cart = require('./cart.model');
 const CartItem = require('./cart_item.model');
 const Order = require('./order.model');
@@ -26,12 +26,9 @@ const db = {
 // Khởi tạo các quan hệ
 initRelationships(db);
 
-sequelize.sync({ force: false })
-    .then(() => {
-        console.log('Database & tables synced successfully');
-    })
-    .catch((error) => {
-        console.error('Sequelize sync error:', error);
-    });
+// Sync database
+sequelize.sync({ alter: true })
+    .then(() => console.log('✔ Database synced successfully'))
+    .catch((error) => console.error('Sequelize sync error:', error));
 
 module.exports = db;

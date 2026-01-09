@@ -1,5 +1,5 @@
 module.exports = (db) => {
-    const { Role, User, Product, ProductVariant, Cart, CartItem, Order, OrderItem } = db;
+    const { Role, User, Product, ProductVariant, Cart, CartItem, Order, OrderItem, UserBehavior } = db;
 
     /**
      * Hàm helper để tạo cấu hình quan hệ đồng nhất
@@ -63,6 +63,13 @@ module.exports = (db) => {
     // ==========================================
     ProductVariant.hasMany(OrderItem, config('variant_id', 'order_items'));
     OrderItem.belongsTo(ProductVariant, config('variant_id', 'variant'));
+
+    // 9. USER_BEHAVIOR RELATIONSHIPS
+    User.hasMany(UserBehavior, config('user_id', 'behaviors', true, 'SET NULL'));
+    UserBehavior.belongsTo(User, config('user_id', 'user', true, 'SET NULL'));
+
+    ProductVariant.hasMany(UserBehavior, config('variant_id', 'behaviors'));
+    UserBehavior.belongsTo(ProductVariant, config('variant_id', 'variant'));
 
     console.log('✔ All relationships initialized successfully');
 };

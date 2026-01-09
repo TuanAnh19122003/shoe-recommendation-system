@@ -3,25 +3,24 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ShoppingCart, ChevronRight, ShieldCheck, Truck, Plus, Minus } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useCart } from '../../context/CartContext'; // 1. IMPORT HOOK
+import { useCart } from '../../context/CartContext';
+import RecommendationList from '../../components/RecommendationList';
 
 const ProductDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
-    const { updateCartCount } = useCart(); // 2. LẤY HÀM CẬP NHẬT TỪ CONTEXT
-    
-    // States
+    const { updateCartCount } = useCart();
+
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // State chọn biến thể
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
     const [currentVariant, setCurrentVariant] = useState(null);
 
-    // Lấy chi tiết sản phẩm
+    // 1. Lấy chi tiết sản phẩm & Ghi nhận hành vi VIEW
     useEffect(() => {
         const fetchProductDetail = async () => {
             try {
@@ -31,6 +30,9 @@ const ProductDetail = () => {
 
                 if (data.variants && data.variants.length > 0) {
                     setSelectedColor(data.variants[0].color);
+
+                    // Tự động track 'view' cho biến thể đầu tiên khi vừa vào trang
+                    trackUserAction(data.variants[0].id, 'view');
                 }
             } catch (error) {
                 console.error("Lỗi lấy chi tiết sản phẩm:", error);
@@ -42,19 +44,48 @@ const ProductDetail = () => {
         fetchProductDetail();
     }, [slug]);
 
-    // Tìm biến thể (Variant) khớp với Màu và Size đã chọn
+    // 2. Tìm biến thể (Variant) khớp với Màu và Size
+    useEffect(() => {
+        if (currentVariant?.id) {
+            trackUserAction(currentVariant.id, 'view');
+        }
+    }, [currentVariant?.id]);
+
+    // 2. Tìm biến thể (Variant) khớp với Màu và Size
     useEffect(() => {
         if (product && selectedColor && selectedSize) {
             const variant = product.variants.find(
                 v => v.color === selectedColor && v.size === selectedSize
             );
+            // SỬA LỖI TẠI ĐÂY: Sử dụng hàm đã khai báo
             setCurrentVariant(variant);
         } else {
+            // Nếu chưa chọn đủ hoặc không tìm thấy, reset về null
             setCurrentVariant(null);
         }
     }, [selectedColor, selectedSize, product]);
 
-    // Logic Thêm vào giỏ hàng
+    // Hàm trackUserAction (Đã tối ưu lấy userId)
+    const trackUserAction = async (variant_id, action) => {
+        try {
+            const userStorage = localStorage.getItem('user');
+            let userId = null;
+            if (userStorage) {
+                const userData = JSON.parse(userStorage);
+                userId = userData.id;
+            }
+
+            await axios.post('http://localhost:5000/api/behavior/track', {
+                variant_id,
+                action,
+                userId
+            });
+        } catch (err) {
+            console.warn("Tracking error:", err.message);
+        }
+    };
+
+    // 3. Logic Thêm vào giỏ hàng & Ghi nhận hành vi ADD_TO_CART
     const handleAddToCart = async () => {
         if (!currentVariant) {
             toast.error("Vui lòng chọn Kích cỡ!");
@@ -72,23 +103,18 @@ const ProductDetail = () => {
             setIsSubmitting(true);
             const response = await axios.post(
                 'http://localhost:5000/api/cart/add',
-                {
-                    variant_id: currentVariant.id,
-                    quantity: quantity
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
+                { variant_id: currentVariant.id, quantity: quantity },
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (response.data) {
                 toast.success("Đã thêm vào giỏ hàng thành công!");
-                
-                // 3. GỌI HÀM CẬP NHẬT ĐỂ HEADER NHẢY SỐ NGAY LẬP TỨC
-                updateCartCount(); 
+                updateCartCount();
+
+                // Ghi nhận hành vi add_to_cart vào hệ thống recommendation
+                trackUserAction(currentVariant.id, 'add_to_cart');
             }
         } catch (error) {
-            console.error("Lỗi API giỏ hàng:", error);
             toast.error(error.response?.data?.message || "Lỗi khi thêm vào giỏ hàng");
         } finally {
             setIsSubmitting(false);
@@ -117,7 +143,7 @@ const ProductDetail = () => {
                 <ChevronRight size={14} className="text-gray-300" />
                 <Link to="/products" className="hover:text-blue-600 transition-colors">Sản phẩm</Link>
                 <ChevronRight size={14} className="text-gray-300" />
-                <span className="text-gray-900 font-bold truncate max-w-200px md:max-w-none">{product.name}</span>
+                <span className="text-gray-900 font-bold truncate">{product.name}</span>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -140,11 +166,6 @@ const ProductDetail = () => {
                         <p className="text-blue-600 font-black text-3xl">
                             {currentVariant ? formatPrice(currentVariant.price) : "Chọn size để xem giá"}
                         </p>
-                        {currentVariant && (
-                            <p className="text-xs text-blue-400 mt-2 font-bold uppercase tracking-widest">
-                                {currentVariant.stock > 0 ? `Còn hàng (${currentVariant.stock} sản phẩm)` : "Hết hàng"}
-                            </p>
-                        )}
                     </div>
 
                     {/* Chọn Màu */}
@@ -174,7 +195,7 @@ const ProductDetail = () => {
                                     onClick={() => setSelectedSize(size)}
                                     className={`py-3 rounded-2xl text-sm font-bold transition-all border-2 
                                         ${stock === 0 ? 'bg-gray-50 border-gray-50 text-gray-200 cursor-not-allowed' :
-                                        selectedSize === size ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white border-gray-100 text-gray-800 hover:border-blue-200'}`}
+                                            selectedSize === size ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white border-gray-100 text-gray-800 hover:border-blue-200'}`}
                                 >
                                     {size}
                                 </button>
@@ -186,16 +207,20 @@ const ProductDetail = () => {
                     <div className="mb-10">
                         <p className="text-sm font-bold uppercase mb-3 tracking-widest text-gray-400">Số lượng</p>
                         <div className="flex items-center gap-4 bg-gray-50 w-fit p-1 rounded-2xl border">
-                            <button 
+                            <button
+                                type="button"
                                 onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all"
+                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all shadow-sm"
                             >
                                 <Minus size={16} />
                             </button>
-                            <span className="w-8 text-center font-bold">{quantity}</span>
-                            <button 
+
+                            <span className="w-8 text-center font-bold text-lg">{quantity}</span>
+
+                            <button
+                                type="button"
                                 onClick={() => setQuantity(prev => Math.min(currentVariant?.stock || 99, prev + 1))}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all"
+                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all shadow-sm"
                             >
                                 <Plus size={16} />
                             </button>
@@ -208,14 +233,7 @@ const ProductDetail = () => {
                         disabled={!currentVariant || currentVariant.stock === 0 || isSubmitting}
                         className="w-full bg-black text-white py-5 rounded-2rem font-black uppercase text-sm tracking-widest hover:bg-gray-800 transition-all disabled:bg-gray-200 flex items-center justify-center gap-3 shadow-xl"
                     >
-                        {isSubmitting ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <ShoppingCart size={20} />
-                                Thêm vào giỏ hàng
-                            </>
-                        )}
+                        {isSubmitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><ShoppingCart size={20} /> Thêm vào giỏ hàng</>}
                     </button>
 
                     {/* Chính sách */}
@@ -230,11 +248,19 @@ const ProductDetail = () => {
                 </div>
             </div>
 
-            <div className="mt-24 max-w-3xl">
-                <h2 className="text-2xl font-black uppercase italic mb-6">Mô tả sản phẩm</h2>
-                <div className="text-gray-500 leading-relaxed whitespace-pre-line bg-gray-50 p-8 rounded-2rem">
-                    {product.description}
+            {/* Mô tả & HỆ THỐNG GỢI Ý */}
+            <div className="mt-24">
+                <div className="max-w-3xl mb-20">
+                    <h2 className="text-2xl font-black uppercase italic mb-6">Mô tả sản phẩm</h2>
+                    <div className="text-gray-500 leading-relaxed whitespace-pre-line bg-gray-50 p-8 rounded-2rem">
+                        {product.description}
+                    </div>
                 </div>
+
+                {/* RENDER RECOMMENDATIONS */}
+                <RecommendationList
+                    currentVariantId={currentVariant?.id || product.variants[0]?.id}
+                />
             </div>
         </div>
     );
