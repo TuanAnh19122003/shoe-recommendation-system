@@ -1,23 +1,23 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, ShoppingCart, Package, Users, LogOut, 
-  ChevronRight, ChevronDown, ShieldCheck, UserCircle, Layers, Box
+import React, { useState, useEffect } from 'react';
+import {
+    LayoutDashboard, ShoppingCart, Package, Users, LogOut,
+    ChevronRight, ChevronDown, ShieldCheck, UserCircle, Layers, Box
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const SidebarItem = ({ icon: Icon, label, to, isChild = false }) => {
     const location = useLocation();
+    // Kiểm tra active chính xác hoặc theo tiền tố đường dẫn
     const isActive = location.pathname === to;
 
     return (
         <Link
             to={to}
-            className={`flex items-center justify-between p-3 rounded-xl transition-all mb-1 ${
-                isActive
+            className={`flex items-center justify-between p-3 rounded-xl transition-all mb-1 ${isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                     : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
-            } ${isChild ? 'ml-9 py-2 text-sm' : ''}`}
+                } ${isChild ? 'ml-9 py-2 text-sm' : ''}`}
         >
             <div className="flex items-center gap-3">
                 <Icon size={isChild ? 18 : 20} />
@@ -28,17 +28,24 @@ const SidebarItem = ({ icon: Icon, label, to, isChild = false }) => {
     );
 };
 
-const SidebarGroup = ({ icon: Icon, label, children, activePathPrefix }) => {
+const SidebarGroup = ({ icon: Icon, label, children, activeUrls = [] }) => {
     const location = useLocation();
-    const [isOpen, setIsOpen] = useState(location.pathname.startsWith(activePathPrefix));
+    // Group chỉ sáng "nhẹ" khi có con đang active
+    const isAnyChildActive = activeUrls.some(url => location.pathname === url);
+    const [isOpen, setIsOpen] = useState(isAnyChildActive);
+
+    // Tự động mở group nếu truy cập trực tiếp từ URL
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (isAnyChildActive) setIsOpen(true);
+    }, [isAnyChildActive]);
 
     return (
         <div className="mb-2">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                    location.pathname.startsWith(activePathPrefix) ? 'text-blue-400 bg-blue-600/5' : 'text-gray-400 hover:bg-gray-800/50'
-                }`}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isAnyChildActive ? 'text-blue-400 bg-blue-600/5' : 'text-gray-400 hover:bg-gray-800/50'
+                    }`}
             >
                 <div className="flex items-center gap-3">
                     <Icon size={20} />
@@ -46,7 +53,7 @@ const SidebarGroup = ({ icon: Icon, label, children, activePathPrefix }) => {
                 </div>
                 <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-            
+
             {isOpen && (
                 <div className="mt-1 transition-all animate-in slide-in-from-top-2 duration-300">
                     {children}
@@ -68,19 +75,26 @@ const AdminSidebar = () => {
             <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
                 <SidebarItem icon={LayoutDashboard} label="Dashboard" to="/admin" />
 
-                {/* Quản lý Người dùng */}
-                <SidebarGroup icon={Users} label="Quản lý Người dùng" activePathPrefix="/">
-                    <SidebarItem icon={UserCircle} label="Tài khoản" to="users" isChild />
-                    <SidebarItem icon={ShieldCheck} label="Phân quyền" to="roles" isChild />
+                {/* Quản lý Người dùng - Chỉ sáng khi url là /admin/users hoặc /admin/roles */}
+                <SidebarGroup
+                    icon={Users}
+                    label="Quản lý Người dùng"
+                    activeUrls={['/admin/users', '/admin/roles']}
+                >
+                    <SidebarItem icon={UserCircle} label="Tài khoản" to="/admin/users" isChild />
+                    <SidebarItem icon={ShieldCheck} label="Phân quyền" to="/admin/roles" isChild />
                 </SidebarGroup>
 
-                {/* Quản lý Sản phẩm */}
-                <SidebarGroup icon={Package} label="Quản lý Sản phẩm" activePathPrefix="/admin/products">
-                    <SidebarItem icon={Box} label="Sản phẩm" to="/admin/products/list" isChild />
-                    <SidebarItem icon={Layers} label="Biến thể (Variant)" to="/admin/products/variants" isChild />
+                {/* Quản lý Sản phẩm - Chỉ sáng khi url là /admin/products hoặc /admin/variants */}
+                <SidebarGroup
+                    icon={Package}
+                    label="Quản lý Sản phẩm"
+                    activeUrls={['/admin/products', '/admin/variants']}
+                >
+                    <SidebarItem icon={Box} label="Sản phẩm" to="/admin/products" isChild />
+                    <SidebarItem icon={Layers} label="Biến thể (Variant)" to="/admin/variants" isChild />
                 </SidebarGroup>
 
-                {/* Quản lý Đơn hàng */}
                 <SidebarItem icon={ShoppingCart} label="Quản lý Đơn hàng" to="/admin/orders" />
             </nav>
 

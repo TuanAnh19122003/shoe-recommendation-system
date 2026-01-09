@@ -100,13 +100,13 @@ const UserForm = ({ initialData, onClose, onSuccess }) => {
                 <form onSubmit={handleSubmit} className="p-8 space-y-5">
                     {/* Upload Ảnh */}
                     <div className="flex flex-col items-center gap-2 mb-4">
-                        <div className="relative w-28 h-28 bg-gray-50 rounded-4xl overflow-hidden border-2 border-dashed border-gray-200 flex items-center justify-center group">
+                        <div className="relative w-full h-48 bg-gray-50 rounded-4xl overflow-hidden border-2 border-dashed border-gray-200 flex items-center justify-center group">
                             {preview ? (
                                 <img src={`${preview}`} className="w-full h-full object-cover" alt="avatar" />
                             ) : (
                                 <User size={40} className="text-gray-200" />
                             )}
-                            <button type="button" onClick={() => fileInputRef.current.click()} className="absolute inset-0 bg-blue-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-all">
+                            <button type="button" onClick={() => fileInputRef.current.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-all gap-2">
                                 <Camera size={24} />
                             </button>
                         </div>
