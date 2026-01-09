@@ -1,20 +1,74 @@
 const { Order, OrderItem, Cart, CartItem, ProductVariant, User, Product, sequelize } = require('../models');
+const { Op, fn, col } = require('sequelize');
 
 class OrderService {
+    // ==========================================
+    // API THỐNG KÊ DASHBOARD (Mới thêm)
+    // ==========================================
+    // Tìm hàm getDashboardStats trong order.service.js
+    static async getDashboardStats() {
+        try {
+            // 1. Tính doanh thu: Cần đảm bảo lọc đúng status 'delivered'
+            const totalRevenue = await Order.sum('total_price', {
+                where: { status: 'delivered' }
+            });
+
+            // 2. Kiểm tra nếu total_price là string (như "671.34" trong JSON bạn gửi)
+            // Đôi khi sum() trả về null nếu không tìm thấy, ta gán mặc định là 0
+            const revenueValue = totalRevenue ? parseFloat(totalRevenue) : 0;
+
+            // 3. Các thông số khác
+            const totalOrders = await Order.count();
+            const totalCustomers = await User.count({ where: { role_id: 2 } });
+
+            const recentOrders = await Order.findAll({
+                limit: 5,
+                order: [['created_at', 'DESC']],
+                include: [{
+                    model: User,
+                    as: 'user',
+                    attributes: ['first_name', 'last_name']
+                }]
+            });
+
+            return {
+                revenue: revenueValue, // Trả về con số đã được xử lý
+                orders: totalOrders,
+                customers: totalCustomers,
+                recentOrders
+            };
+        } catch (error) {
+            console.error("Lỗi tại Service:", error);
+            throw error;
+        }
+    }
+
+    // ==========================================
+    // THỐNG KÊ DOANH THU THEO THÁNG (Cho biểu đồ)
+    // ==========================================
+    static async getRevenueByMonth() {
+        return await Order.findAll({
+            attributes: [
+                [fn('MONTH', col('created_at')), 'month'],
+                [fn('SUM', col('total_price')), 'total']
+            ],
+            where: { status: 'completed' },
+            group: [fn('MONTH', col('created_at'))],
+            order: [[fn('MONTH', col('created_at')), 'ASC']]
+        });
+    }
+
     // ==========================================
     // LẤY TẤT CẢ ĐƠN HÀNG (Dành cho Admin)
     // ==========================================
     static async getAllOrdersAdmin(options = {}) {
         const { offset, limit, search, status } = options;
-
         const whereClause = {};
 
-        // Lọc theo trạng thái đơn hàng
         if (status && status !== 'all') {
             whereClause.status = status;
         }
 
-        // Tìm kiếm theo tên khách hàng, số điện thoại hoặc email (giống logic user)
         if (search) {
             whereClause[Op.or] = [
                 { customer_name: { [Op.like]: `%${search}%` } },
@@ -49,12 +103,10 @@ class OrderService {
             offset: offset ? parseInt(offset) : undefined,
             limit: limit ? parseInt(limit) : undefined,
             order: [['created_at', 'DESC']],
-            distinct: true // Rất quan trọng khi dùng findAndCountAll kèm với include (HasMany)
+            distinct: true
         };
 
-        // Trả về { count, rows } trực tiếp giống UserService
-        const orders = await Order.findAndCountAll(queryOptions);
-        return orders;
+        return await Order.findAndCountAll(queryOptions);
     }
 
     // ==========================================
@@ -80,7 +132,6 @@ class OrderService {
             }
 
             let totalAmount = 0;
-            // Tính toán và kiểm tra kho
             for (const item of cart.items) {
                 if (!item.variant) throw new Error('Một số sản phẩm không còn tồn tại');
                 if (item.variant.stock < item.quantity) {
@@ -99,7 +150,6 @@ class OrderService {
                 status: 'pending'
             }, { transaction: t });
 
-            // Lưu Item vào Order và trừ Stock
             for (const item of cart.items) {
                 await OrderItem.create({
                     order_id: order.id,
@@ -111,9 +161,7 @@ class OrderService {
                 await item.variant.decrement('stock', { by: item.quantity, transaction: t });
             }
 
-            // Xóa giỏ hàng
             await CartItem.destroy({ where: { cart_id: cart.id }, transaction: t });
-
             await t.commit();
             return order;
         } catch (error) {

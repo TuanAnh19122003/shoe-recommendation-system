@@ -2,6 +2,29 @@ const OrderService = require('../services/order.service');
 const { Order, User, OrderItem, ProductVariant, Product } = require('../models');
 
 class OrderController {
+    // ==========================================
+    // MỚI: Lấy thống kê cho Dashboard Admin
+    // ==========================================
+    async getAdminDashboardStats(req, res) {
+        try {
+            // Gọi service đã viết để lấy tổng hợp dữ liệu
+            const stats = await OrderService.getDashboardStats();
+            
+            res.status(200).json({
+                success: true,
+                message: 'Lấy thống kê dashboard thành công',
+                data: stats
+            });
+        } catch (error) {
+            console.error('Lỗi getAdminDashboardStats:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Không thể lấy dữ liệu thống kê',
+                error: error.message
+            });
+        }
+    }
+
     // Lấy tất cả đơn hàng (Cho trang quản lý)
     async getAllOrders(req, res) {
         try {
@@ -12,7 +35,6 @@ class OrderController {
 
             let result;
 
-            // Nếu không có phân trang, lấy tất cả theo filter
             if (!page || !pageSize) {
                 result = await OrderService.getAllOrdersAdmin({ search, status });
                 return res.status(200).json({
@@ -23,7 +45,6 @@ class OrderController {
                 });
             }
 
-            // Xử lý phân trang
             const offset = (page - 1) * pageSize;
             result = await OrderService.getAllOrdersAdmin({
                 offset,
@@ -51,7 +72,7 @@ class OrderController {
         }
     }
 
-    // Lấy đơn hàng cá nhân
+    // Lấy đơn hàng cá nhân (Dành cho trang My Orders của khách)
     async getMyOrders(req, res) {
         try {
             const userId = req.user.id;
@@ -74,7 +95,7 @@ class OrderController {
         }
     }
 
-    // Cập nhật trạng thái
+    // Cập nhật trạng thái đơn hàng (Admin duyệt đơn)
     async updateOrderStatus(req, res) {
         try {
             const { id } = req.params;
@@ -90,7 +111,7 @@ class OrderController {
         }
     }
 
-    // Đặt hàng COD
+    // Đặt hàng COD (Khách thanh toán)
     async checkoutCOD(req, res) {
         try {
             const order = await OrderService.createOrderCOD(req.user.id, req.body);
