@@ -16,7 +16,7 @@ export default function Auth({ onLoginSuccess }) {
     const [showPassword, setShowPassword] = useState(false);
 
     // Cấu hình Base URL của bạn ở đây
-    const BASE_URL = 'http://localhost:5000/api';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
     const [rememberMe, setRememberMe] = useState(() => {
         return !!localStorage.getItem('rememberedEmail');
@@ -47,7 +47,7 @@ export default function Auth({ onLoginSuccess }) {
             : formData;
 
         try {
-            const res = await axios.post(`${BASE_URL}${endpoint}`, payload);
+            const res = await axios.post(`${API_URL}${endpoint}`, payload);
 
             // Lấy token và thông tin user từ cấu trúc JSON bạn gửi
             const { success, token, user } = res.data;

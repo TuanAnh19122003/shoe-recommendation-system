@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ShoppingCart, ChevronRight, ShieldCheck, Truck, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, ChevronRight, ShieldCheck, Truck, Plus, Minus, Info } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useCart } from '../../context/CartContext';
 import RecommendationList from '../../components/RecommendationList';
@@ -10,6 +11,10 @@ const ProductDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { updateCartCount } = useCart();
+
+    // Biến môi trường
+    const API_URL = import.meta.env.VITE_API_URL;
+    const BASE_URL = API_URL.replace('/api', '');
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -20,18 +25,19 @@ const ProductDetail = () => {
     const [selectedSize, setSelectedSize] = useState(null);
     const [currentVariant, setCurrentVariant] = useState(null);
 
-    // 1. Lấy chi tiết sản phẩm & Ghi nhận hành vi VIEW
+    // 1. Lấy chi tiết sản phẩm
     useEffect(() => {
         const fetchProductDetail = async () => {
+            setLoading(true);
             try {
-                const response = await axios.get(`http://localhost:5000/api/products/detail/${slug}`);
+                const response = await axios.get(`${API_URL}/products/detail/${slug}`);
                 const data = response.data.data;
                 setProduct(data);
 
                 if (data.variants && data.variants.length > 0) {
+                    // Chọn màu đầu tiên mặc định
                     setSelectedColor(data.variants[0].color);
-
-                    // Tự động track 'view' cho biến thể đầu tiên khi vừa vào trang
+                    // Track view cho sản phẩm tổng quát hoặc biến thể đầu
                     trackUserAction(data.variants[0].id, 'view');
                 }
             } catch (error) {
@@ -42,30 +48,27 @@ const ProductDetail = () => {
             }
         };
         fetchProductDetail();
+        window.scrollTo(0, 0); // Cuộn lên đầu trang khi đổi slug
     }, [slug]);
 
-    // 2. Tìm biến thể (Variant) khớp với Màu và Size
-    useEffect(() => {
-        if (currentVariant?.id) {
-            trackUserAction(currentVariant.id, 'view');
-        }
-    }, [currentVariant?.id]);
-
-    // 2. Tìm biến thể (Variant) khớp với Màu và Size
+    // 2. Tìm biến thể khớp với Màu và Size
     useEffect(() => {
         if (product && selectedColor && selectedSize) {
             const variant = product.variants.find(
                 v => v.color === selectedColor && v.size === selectedSize
             );
-            // SỬA LỖI TẠI ĐÂY: Sử dụng hàm đã khai báo
             setCurrentVariant(variant);
+            
+            // Nếu tìm thấy biến thể cụ thể, track view cho biến thể đó
+            if (variant) {
+                trackUserAction(variant.id, 'view');
+            }
         } else {
-            // Nếu chưa chọn đủ hoặc không tìm thấy, reset về null
             setCurrentVariant(null);
         }
     }, [selectedColor, selectedSize, product]);
 
-    // Hàm trackUserAction (Đã tối ưu lấy userId)
+    // Hàm trackUserAction (Gửi dữ liệu về AI Recommendation)
     const trackUserAction = async (variant_id, action) => {
         try {
             const userStorage = localStorage.getItem('user');
@@ -75,17 +78,16 @@ const ProductDetail = () => {
                 userId = userData.id;
             }
 
-            await axios.post('http://localhost:5000/api/behavior/track', {
+            await axios.post(`${API_URL}/behavior/track`, {
                 variant_id,
                 action,
                 userId
             });
         } catch (err) {
-            console.warn("Tracking error:", err.message);
+            console.warn("Tracking hint:", action, err.message);
         }
     };
 
-    // 3. Logic Thêm vào giỏ hàng & Ghi nhận hành vi ADD_TO_CART
     const handleAddToCart = async () => {
         if (!currentVariant) {
             toast.error("Vui lòng chọn Kích cỡ!");
@@ -102,16 +104,14 @@ const ProductDetail = () => {
         try {
             setIsSubmitting(true);
             const response = await axios.post(
-                'http://localhost:5000/api/cart/add',
+                `${API_URL}/cart/add`,
                 { variant_id: currentVariant.id, quantity: quantity },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (response.data) {
-                toast.success("Đã thêm vào giỏ hàng thành công!");
+                toast.success("Đã thêm vào giỏ hàng!");
                 updateCartCount();
-
-                // Ghi nhận hành vi add_to_cart vào hệ thống recommendation
                 trackUserAction(currentVariant.id, 'add_to_cart');
             }
         } catch (error) {
@@ -121,7 +121,13 @@ const ProductDetail = () => {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center italic text-gray-400">Đang tải siêu phẩm...</div>;
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Loading Sneaker...</p>
+        </div>
+    );
+
     if (!product) return <div className="min-h-screen flex items-center justify-center font-bold">Không tìm thấy sản phẩm.</div>;
 
     const colors = [...new Set(product.variants.map(v => v.color))];
@@ -134,133 +140,162 @@ const ProductDetail = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-12">
-            <Toaster position="top-center" reverseOrder={false} />
+        <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20">
+            <Toaster position="bottom-right" reverseOrder={false} />
 
-            {/* Breadcrumb */}
-            <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8 font-medium">
-                <Link to="/" className="hover:text-blue-600 transition-colors">Trang chủ</Link>
-                <ChevronRight size={14} className="text-gray-300" />
-                <Link to="/products" className="hover:text-blue-600 transition-colors">Sản phẩm</Link>
-                <ChevronRight size={14} className="text-gray-300" />
-                <span className="text-gray-900 font-bold truncate">{product.name}</span>
+            {/* Breadcrumb - Minimalist style */}
+            <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-12">
+                <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
+                <ChevronRight size={10} />
+                <Link to="/products" className="hover:text-blue-600 transition-colors">Shop</Link>
+                <ChevronRight size={10} />
+                <span className="text-slate-900 truncate">{product.name}</span>
             </nav>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                {/* Ảnh sản phẩm */}
-                <div className="aspect-square rounded-[3rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+                {/* Ảnh sản phẩm - Sticky on Desktop */}
+                <div className="lg:sticky lg:top-32 aspect-square rounded-[3.5rem] overflow-hidden bg-slate-50 border border-slate-100 shadow-2xl shadow-slate-200/50 group">
                     <img
-                        src={product.image?.startsWith('http') ? product.image : `http://localhost:5000/${product.image}`}
+                        src={product.image?.startsWith('http') ? product.image : `${BASE_URL}/${product.image}`}
                         alt={product.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
+                        onError={(e) => { e.target.src = 'https://placehold.co/800x800?text=Product'; }}
                     />
                 </div>
 
                 {/* Thông tin chi tiết */}
                 <div className="flex flex-col">
-                    <h1 className="text-4xl font-black text-gray-900 uppercase italic tracking-tighter mb-4">
-                        {product.name}
-                    </h1>
-
-                    <div className="mb-8 p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
-                        <p className="text-blue-600 font-black text-3xl">
-                            {currentVariant ? formatPrice(currentVariant.price) : "Chọn size để xem giá"}
-                        </p>
+                    <div className="mb-10">
+                        <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+                            Chính hãng 100%
+                        </span>
+                        <h1 className="text-5xl lg:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-[0.9] mb-6">
+                            {product.name}
+                        </h1>
+                        <div className="flex items-center gap-4">
+                            <p className="text-4xl font-black text-blue-600 tracking-tighter italic">
+                                {currentVariant ? formatPrice(currentVariant.price) : formatPrice(product.variants[0].price)}
+                            </p>
+                            {!currentVariant && (
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-bounce">
+                                    ← Chọn size để cập nhật giá
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Chọn Màu */}
-                    <div className="mb-6">
-                        <p className="text-sm font-bold uppercase mb-3 tracking-widest text-gray-400">Màu sắc: <span className="text-gray-900">{selectedColor}</span></p>
-                        <div className="flex gap-3">
+                    <div className="mb-8">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Màu sắc: <span className="text-slate-900 ml-2">{selectedColor}</span></p>
+                        </div>
+                        <div className="flex flex-wrap gap-4">
                             {colors.map(color => (
                                 <button
                                     key={color}
                                     onClick={() => { setSelectedColor(color); setSelectedSize(null); }}
-                                    className={`w-10 h-10 rounded-full border-2 transition-all p-0.5 ${selectedColor === color ? 'border-blue-600 scale-110 shadow-lg' : 'border-transparent'}`}
+                                    className={`w-12 h-12 rounded-2xl border-2 transition-all p-1 group ${selectedColor === color ? 'border-slate-900 scale-110 shadow-xl' : 'border-transparent hover:border-slate-200'}`}
                                 >
-                                    <div className="w-full h-full rounded-full border border-gray-100" style={{ backgroundColor: color }} />
+                                    <div className="w-full h-full rounded-xl border border-slate-100 shadow-inner" style={{ backgroundColor: color }} />
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Chọn Size */}
-                    <div className="mb-8">
-                        <p className="text-sm font-bold uppercase mb-3 tracking-widest text-gray-400">Kích cỡ (Size)</p>
-                        <div className="grid grid-cols-4 gap-2">
+                    <div className="mb-10">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Kích cỡ US/EU</p>
+                            <button className="text-[10px] font-bold text-blue-600 underline flex items-center gap-1">
+                                <Info size={12} /> Bảng size
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                             {sizesForColor.map(({ size, stock }) => (
                                 <button
                                     key={size}
                                     disabled={stock === 0}
                                     onClick={() => setSelectedSize(size)}
-                                    className={`py-3 rounded-2xl text-sm font-bold transition-all border-2 
-                                        ${stock === 0 ? 'bg-gray-50 border-gray-50 text-gray-200 cursor-not-allowed' :
-                                            selectedSize === size ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white border-gray-100 text-gray-800 hover:border-blue-200'}`}
+                                    className={`h-14 rounded-2xl text-xs font-black transition-all border-2 flex flex-col items-center justify-center
+                                        ${stock === 0 ? 'bg-slate-50 border-slate-50 text-slate-300 cursor-not-allowed grayscale' :
+                                            selectedSize === size ? 'bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-400' : 'bg-white border-slate-100 text-slate-800 hover:border-slate-900'}`}
                                 >
                                     {size}
+                                    {stock < 5 && stock > 0 && <span className="text-[8px] font-normal opacity-70">Sắp hết</span>}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Chọn Số lượng */}
-                    <div className="mb-10">
-                        <p className="text-sm font-bold uppercase mb-3 tracking-widest text-gray-400">Số lượng</p>
-                        <div className="flex items-center gap-4 bg-gray-50 w-fit p-1 rounded-2xl border">
+                    {/* Số lượng & Nút Add */}
+                    <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                        <div className="flex items-center justify-between bg-slate-100 p-2 rounded-1.5rem border-2 border-slate-100 w-full sm:w-40">
                             <button
-                                type="button"
                                 onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm hover:scale-95 transition-transform"
                             >
-                                <Minus size={16} />
+                                <Minus size={14} strokeWidth={3} />
                             </button>
-
-                            <span className="w-8 text-center font-bold text-lg">{quantity}</span>
-
+                            <span className="font-black text-lg italic">{quantity}</span>
                             <button
-                                type="button"
                                 onClick={() => setQuantity(prev => Math.min(currentVariant?.stock || 99, prev + 1))}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition-all shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm hover:scale-95 transition-transform"
                             >
-                                <Plus size={16} />
+                                <Plus size={14} strokeWidth={3} />
                             </button>
                         </div>
+
+                        <button
+                            onClick={handleAddToCart}
+                            disabled={!currentVariant || currentVariant.stock === 0 || isSubmitting}
+                            className="flex-1 bg-blue-600 text-white py-5 rounded-1.5rem font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3 disabled:bg-slate-200 disabled:shadow-none group"
+                        >
+                            {isSubmitting ? (
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <><ShoppingCart size={18} className="group-hover:-translate-y-1 transition-transform" /> {currentVariant?.stock === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}</>
+                            )}
+                        </button>
                     </div>
 
-                    {/* Nút Thêm vào giỏ */}
-                    <button
-                        onClick={handleAddToCart}
-                        disabled={!currentVariant || currentVariant.stock === 0 || isSubmitting}
-                        className="w-full bg-black text-white py-5 rounded-2rem font-black uppercase text-sm tracking-widest hover:bg-gray-800 transition-all disabled:bg-gray-200 flex items-center justify-center gap-3 shadow-xl"
-                    >
-                        {isSubmitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><ShoppingCart size={20} /> Thêm vào giỏ hàng</>}
-                    </button>
-
-                    {/* Chính sách */}
-                    <div className="grid grid-cols-1 gap-4 pt-8 mt-10 border-t border-gray-100">
-                        <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
-                            <Truck size={20} className="text-blue-600" /> Miễn phí vận chuyển cho đơn trên 1 triệu
+                    {/* Chính sách - Card style */}
+                    <div className="grid grid-cols-2 gap-4 p-6 bg-slate-50 rounded-2rem border border-slate-100">
+                        <div className="flex flex-col gap-2">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm">
+                                <Truck size={16} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 italic">Miễn phí giao hàng</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Cho hóa đơn từ 1.000.000đ</p>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
-                            <ShieldCheck size={20} className="text-blue-600" /> Hàng chính hãng 100%
+                        <div className="flex flex-col gap-2">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm">
+                                <ShieldCheck size={16} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 italic">Bảo hành 12 tháng</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Cam kết hàng Auth 100%</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Mô tả & HỆ THỐNG GỢI Ý */}
-            <div className="mt-24">
-                <div className="max-w-3xl mb-20">
-                    <h2 className="text-2xl font-black uppercase italic mb-6">Mô tả sản phẩm</h2>
-                    <div className="text-gray-500 leading-relaxed whitespace-pre-line bg-gray-50 p-8 rounded-2rem">
+            {/* Content Tabs/Description */}
+            <div className="mt-32">
+                <div className="flex gap-12 border-b border-slate-100 mb-12">
+                    <button className="pb-6 border-b-2 border-slate-900 text-[11px] font-black uppercase tracking-[0.3em]">Mô tả chi tiết</button>
+                    <button className="pb-6 text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] hover:text-slate-900 transition-colors">Đánh giá (0)</button>
+                </div>
+                <div className="max-w-4xl">
+                    <div className="text-slate-500 leading-loose text-sm font-medium whitespace-pre-line bg-white rounded-2rem">
                         {product.description}
                     </div>
                 </div>
 
-                {/* RENDER RECOMMENDATIONS */}
-                <RecommendationList
-                    currentVariantId={currentVariant?.id || product.variants[0]?.id}
-                />
+                {/* HỆ THỐNG GỢI Ý - Truyền variant ID hiện tại */}
+                <div className="mt-32">
+                    <RecommendationList
+                        currentVariantId={currentVariant?.id || product.variants[0]?.id}
+                    />
+                </div>
             </div>
         </div>
     );

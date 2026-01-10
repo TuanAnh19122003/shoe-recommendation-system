@@ -21,7 +21,7 @@ const UserPage = () => {
 
     // --- PHÂN TRANG ---
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 5;
+    const pageSize = 6;
 
     // --- LOGIC FETCH DATA ---
     const fetchUsers = async () => {
