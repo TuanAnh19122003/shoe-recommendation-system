@@ -9,7 +9,7 @@ class OrderController {
         try {
             // Gọi service đã viết để lấy tổng hợp dữ liệu
             const stats = await OrderService.getDashboardStats();
-            
+
             res.status(200).json({
                 success: true,
                 message: 'Lấy thống kê dashboard thành công',
@@ -118,6 +118,33 @@ class OrderController {
             res.status(201).json({ success: true, data: order });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async checkoutVNPAY(req, res) {
+        try {
+            const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const result = await OrderService.createOrderVNPAY(req.user.id, req.body, ipAddress);
+            res.status(200).json({ success: true, paymentUrl: result.paymentUrl });
+        } catch (error) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async vnpayReturn(req, res) {
+        try {
+            const result = await OrderService.verifyVNPAYReturn(req.query);
+
+            // Sau khi xử lý DB xong, đẩy trình duyệt về lại React
+            if (result.success) {
+                return res.redirect(`http://localhost:5173/payment-result?status=success&orderId=${result.orderId}`);
+            } else {
+                // Trường hợp thất bại hoặc hủy
+                return res.redirect(`http://localhost:5173/payment-result?status=error&orderId=${result.orderId || ''}`);
+            }
+        } catch (error) {
+            console.error("VNPAY Error:", error);
+            return res.redirect(`http://localhost:5173/payment-result?status=error`);
         }
     }
 }

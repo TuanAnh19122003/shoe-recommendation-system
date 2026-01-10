@@ -3,27 +3,22 @@ const router = express.Router();
 const orderController = require('../controllers/order.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
-// Áp dụng authMiddleware cho tất cả các thao tác đơn hàng
+// 1. ROUTE NÀY PHẢI ĐỂ TRƯỚC MIDDLEWARE (PUBLIC)
+// Đây là nơi VNPAY gọi về, không cần check login
+router.get('/vnpay-return', orderController.vnpayReturn);
+
+// 2. SAU ĐÓ MỚI ÁP DỤNG authMiddleware cho các route còn lại
 router.use(authMiddleware);
 
-// --- ROUTES DÀNH CHO ADMIN ---
-
-// GET http://localhost:5000/api/orders/dashboard/stats -> Lấy thống kê Dashboard
+// --- ROUTES DÀNH CHO ADMIN (Cần login) ---
 router.get('/dashboard/stats', orderController.getAdminDashboardStats);
-
-// GET http://localhost:5000/api/orders -> Lấy tất cả đơn hàng (Quản lý đơn hàng)
 router.get('/', orderController.getAllOrders);
-
-// PUT http://localhost:5000/api/orders/status/:id -> Cập nhật trạng thái
 router.put('/status/:id', orderController.updateOrderStatus);
 
-
-// --- ROUTES DÀNH CHO USER ---
-
-// POST http://localhost:5000/api/orders/checkout-cod -> Đặt hàng
+// --- ROUTES DÀNH CHO USER (Cần login) ---
 router.post('/checkout-cod', orderController.checkoutCOD);
-
-// GET http://localhost:5000/api/orders/my-orders -> Đơn hàng của tôi
+// Không cần ghi authMiddleware ở đây nữa vì đã dùng router.use ở trên rồi
+router.post('/checkout-vnpay', orderController.checkoutVNPAY); 
 router.get('/my-orders', orderController.getMyOrders);
 
 module.exports = router;

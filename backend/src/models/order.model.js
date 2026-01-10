@@ -11,9 +11,12 @@ const Order = sequelize.define('Order', {
     phone_number: { type: DataTypes.STRING, allowNull: false },
     address: { type: DataTypes.TEXT, allowNull: false },
     // Thanh toán
-    payment_method: { type: DataTypes.ENUM('COD', 'BANKING'), defaultValue: 'COD' },
+    payment_method: {
+        type: DataTypes.ENUM('COD', 'VNPAY'), // Thêm VNPAY
+        defaultValue: 'COD'
+    },
     status: {
-        type: DataTypes.ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled'),
+        type: DataTypes.ENUM('pending', 'paid', 'confirmed', 'shipped', 'delivered', 'cancelled'),
         defaultValue: 'pending'
     }
 }, {

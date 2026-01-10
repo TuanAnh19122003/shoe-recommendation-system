@@ -27,7 +27,7 @@ const db = {
 initRelationships(db);
 
 // Sync database
-sequelize.sync({ alter: true })
+sequelize.sync({ force: false })
     .then(() => console.log('✔ Database synced successfully'))
     .catch((error) => console.error('Sequelize sync error:', error));
 
