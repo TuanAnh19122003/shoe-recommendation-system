@@ -56,7 +56,7 @@ const Checkout = () => {
         } catch (error) {
             navigate('/cart');
             console.log(error);
-            
+
         } finally {
             setLoading(false);
         }
@@ -68,25 +68,40 @@ const Checkout = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Chặn nếu chọn VNPay vì chưa phát triển
-        if (paymentMethod === 'vnpay') {
-            toast.error("Phương thức thanh toán VNPay đang được bảo trì. Vui lòng chọn COD!");
-            return;
-        }
-
         setIsSubmitting(true);
-        try {
-            await axios.post('http://localhost:5000/api/orders/checkout-cod',
-                shippingData,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
 
-            toast.success("Đặt hàng thành công!");
-            updateCartCount();
-            setTimeout(() => navigate('/my-orders'), 2000);
+        try {
+            if (paymentMethod === 'vnpay') {
+                // LUỒNG THANH TOÁN VNPAY
+                const res = await axios.post(
+                    'http://localhost:5000/api/orders/checkout-vnpay',
+                    shippingData,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                if (res.data.success && res.data.paymentUrl) {
+                    toast.loading("Đang chuyển hướng sang cổng thanh toán VNPAY...");
+                    // Chuyển hướng trình duyệt sang trang VNPAY
+                    window.location.href = res.data.paymentUrl;
+                } else {
+                    throw new Error("Không nhận được link thanh toán từ hệ thống");
+                }
+
+            } else {
+                // LUỒNG THANH TOÁN COD (Giữ nguyên cũ)
+                await axios.post(
+                    'http://localhost:5000/api/orders/checkout-cod',
+                    shippingData,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                toast.success("Đặt hàng thành công!");
+                updateCartCount();
+                setTimeout(() => navigate('/my-orders'), 2000);
+            }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Lỗi khi đặt hàng");
+            console.error("Lỗi đặt hàng:", error);
+            toast.error(error.response?.data?.message || "Lỗi khi xử lý đơn hàng");
         } finally {
             setIsSubmitting(false);
         }
@@ -155,14 +170,13 @@ const Checkout = () => {
                             <CreditCard size={20} />
                             <h2 className="font-bold uppercase tracking-wide">Phương thức thanh toán</h2>
                         </div>
-                        
+
                         <div className="space-y-3">
                             {/* Lựa chọn COD */}
-                            <div 
+                            <div
                                 onClick={() => setPaymentMethod('cod')}
-                                className={`p-4 border-2 cursor-pointer rounded-2xl flex items-center justify-between transition-all ${
-                                    paymentMethod === 'cod' ? 'border-black bg-gray-50' : 'border-gray-100'
-                                }`}
+                                className={`p-4 border-2 cursor-pointer rounded-2xl flex items-center justify-between transition-all ${paymentMethod === 'cod' ? 'border-black bg-gray-50' : 'border-gray-100'
+                                    }`}
                             >
                                 <div className="flex items-center gap-3">
                                     <PackageCheck className={paymentMethod === 'cod' ? 'text-green-600' : 'text-gray-400'} />
@@ -176,21 +190,25 @@ const Checkout = () => {
                             </div>
 
                             {/* Lựa chọn VNPay (Chỉ hiện UI) */}
-                            <div 
+                            {/* Lựa chọn VNPay */}
+                            <div
                                 onClick={() => setPaymentMethod('vnpay')}
-                                className={`p-4 border-2 cursor-pointer rounded-2xl flex items-center justify-between transition-all ${
-                                    paymentMethod === 'vnpay' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100'
-                                }`}
+                                className={`p-4 border-2 cursor-pointer rounded-2xl flex items-center justify-between transition-all ${paymentMethod === 'vnpay' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 hover:border-blue-200'
+                                    }`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-6 h-6 shrink-0">
-                                        <img src="https://vinadesign.vn/uploads/thumbnails/800/2023/05/vnpay-logo-vinadesign-25-12-59-16.jpg" alt="vnpay" className="w-full h-full object-contain" />
+                                    <div className="w-10 h-10 shrink-0 bg-white p-1 rounded-lg border border-gray-100">
+                                        <img
+                                            src="https://vinadesign.vn/uploads/thumbnails/800/2023/05/vnpay-logo-vinadesign-25-12-59-16.jpg"
+                                            alt="vnpay"
+                                            className="w-full h-full object-contain"
+                                        />
                                     </div>
                                     <div className="flex flex-col">
                                         <span className={`font-bold text-sm ${paymentMethod === 'vnpay' ? 'text-blue-700' : 'text-gray-500'}`}>
-                                            Thanh toán qua VNPay
+                                            Thẻ ATM / QR Code (VNPAY)
                                         </span>
-                                        <span className="text-[10px] text-gray-400 font-medium italic">Sắp ra mắt</span>
+                                        <span className="text-[10px] text-gray-400 font-medium">Thanh toán an toàn qua cổng VNPAY</span>
                                     </div>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'vnpay' ? 'border-blue-500' : 'border-gray-300'}`}>
@@ -203,9 +221,8 @@ const Checkout = () => {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className={`w-full py-5 rounded-2rem font-black uppercase tracking-widest transition-all shadow-xl ${
-                            isSubmitting ? 'bg-gray-400' : 'bg-black text-white hover:bg-blue-600'
-                        }`}
+                        className={`w-full py-5 rounded-2rem font-black uppercase tracking-widest transition-all shadow-xl ${isSubmitting ? 'bg-gray-400' : 'bg-black text-white hover:bg-blue-600'
+                            }`}
                     >
                         {isSubmitting ? 'Đang xử lý...' : (paymentMethod === 'cod' ? 'Xác nhận đặt hàng' : 'Thanh toán ngay')}
                     </button>

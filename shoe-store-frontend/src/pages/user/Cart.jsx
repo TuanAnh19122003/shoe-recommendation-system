@@ -19,6 +19,8 @@ const Cart = () => {
             });
             // API trả về { success: true, data: { items: [...] } }
             setCartData(response.data.data);
+            console.log(response.data.data);
+            
         } catch (error) {
             console.error("Lỗi lấy giỏ hàng:", error);
             toast.error("Không thể tải giỏ hàng");

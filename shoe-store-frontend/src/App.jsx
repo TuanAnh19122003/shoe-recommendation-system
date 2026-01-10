@@ -11,6 +11,8 @@ import ProductDetail from './pages/user/ProductDetail';
 import Cart from './pages/user/Cart';
 import Checkout from './pages/user/Checkout';
 import MyOrders from './pages/user/MyOrders';
+import VNPAYReturn from './pages/VNPAYReturn';
+import PaymentResult from './pages/user/PaymentResult';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
@@ -52,6 +54,8 @@ function App() {
           <Route path='cart' element={< Cart />} />
           <Route path='checkout' element={< Checkout />} />
           <Route path='my-orders' element={< MyOrders />} />
+          <Route path="/order/vnpay-return" element={<VNPAYReturn />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
         </Route>
 
         {/* ROUTES ADMIN: Cần bảo vệ */}
@@ -74,6 +78,7 @@ function App() {
         {/* AUTH & OTHERS */}
         <Route path="/auth/login" element={<Auth />} />
         <Route path="*" element={<NotFound />} />
+        
       </Routes>
     </BrowserRouter>
   );
