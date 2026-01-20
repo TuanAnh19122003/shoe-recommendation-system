@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import UserLayout from './components/layouts/user/userLayout';
 import AdminLayout from './components/layouts/admin/adminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -13,6 +14,7 @@ import Checkout from './pages/user/Checkout';
 import MyOrders from './pages/user/MyOrders';
 import VNPAYReturn from './pages/VNPAYReturn';
 import PaymentResult from './pages/user/PaymentResult';
+import Collections from './pages/user/Collections';
 
 import Dashboard from './pages/admin/Dashboard';
 import RolePage from './pages/admin/role/RolePage';
@@ -45,26 +47,29 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ROUTES USER: Công khai */}
+        {/* ROUTES USER */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
-          <Route path='profile' element={< ProfilePage />} />
-          <Route path='products' element={< Product />} />
+          <Route path='products' element={<Product />} />
           <Route path="product/:slug" element={<ProductDetail />} />
-          <Route path='cart' element={< Cart />} />
-          <Route path='checkout' element={< Checkout />} />
-          <Route path='my-orders' element={< MyOrders />} />
           <Route path="/order/vnpay-return" element={<VNPAYReturn />} />
           <Route path="/payment-result" element={<PaymentResult />} />
+          <Route path="/collections" element={<Collections />} />
+
+          {/* Trang yêu cầu đăng nhập (Role nào cũng được) */}
+          <Route path='profile' element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path='cart' element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+          <Route path='checkout' element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path='my-orders' element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
         </Route>
 
-        {/* ROUTES ADMIN: Cần bảo vệ */}
+        {/* ROUTES ADMIN: Chỉ dành cho role 'admin' */}
         <Route
           path="/admin"
           element={
-            <AdminRoute>
+            <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout />
-            </AdminRoute>
+            </ProtectedRoute>
           }
         >
           <Route index element={<Dashboard />} />
@@ -72,13 +77,12 @@ function App() {
           <Route path="users" element={<UserPage />} />
           <Route path="products" element={<ProductPage />} />
           <Route path="variants" element={<VariantPage />} />
-          <Route path='orders' element={< OrderPage />} />
+          <Route path='orders' element={<OrderPage />} />
         </Route>
 
-        {/* AUTH & OTHERS */}
+        {/* AUTH */}
         <Route path="/auth/login" element={<Auth />} />
         <Route path="*" element={<NotFound />} />
-        
       </Routes>
     </BrowserRouter>
   );

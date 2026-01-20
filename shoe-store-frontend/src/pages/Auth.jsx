@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Import trực tiếp axios
+import axiosClient from '../api/axiosClient';
 import {
     Mail, Lock, ArrowRight, Loader2,
     Eye, EyeOff, Footprints, UserPlus,
@@ -14,9 +14,6 @@ export default function Auth({ onLoginSuccess }) {
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-
-    // Cấu hình Base URL của bạn ở đây
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
     const [rememberMe, setRememberMe] = useState(() => {
         return !!localStorage.getItem('rememberedEmail');
@@ -47,33 +44,33 @@ export default function Auth({ onLoginSuccess }) {
             : formData;
 
         try {
-            const res = await axios.post(`${API_URL}${endpoint}`, payload);
-
-            // Lấy token và thông tin user từ cấu trúc JSON bạn gửi
+            // Sử dụng axiosClient đã cấu hình sẵn baseURL
+            const res = await axiosClient.post(endpoint, payload);
             const { success, token, user } = res.data;
 
             if (success && token) {
-                // 1. Lưu Token vào LocalStorage
+                // 1. Lưu thông tin vào Storage
                 localStorage.setItem('token', token);
-
-                // 2. Lưu thông tin User (để hiển thị tên, email ở các trang khác)
                 localStorage.setItem('user', JSON.stringify(user));
 
                 if (mode === 'login' && rememberMe) {
                     localStorage.setItem('rememberedEmail', formData.email);
+                } else {
+                    localStorage.removeItem('rememberedEmail');
                 }
 
+                // 2. Hiệu ứng thành công
                 setIsSuccess(true);
 
+                // 3. Điều hướng sau 1.5s
                 setTimeout(() => {
-                    // Gọi callback nếu có (để cập nhật state global ở App.js)
                     if (onLoginSuccess) onLoginSuccess(user);
 
-                    // 3. LOGIC PHÂN QUYỀN ĐIỀU HƯỚNG TẠI ĐÂY
-                    if (user.role && user.role.code === 'admin') {
-                        navigate('/admin'); // Chuyển đến trang quản trị
+                    // Phân quyền điều hướng
+                    if (user.role?.code === 'admin') {
+                        navigate('/admin');
                     } else {
-                        navigate('/'); // Chuyển đến trang mua sắm cho user thường
+                        navigate('/');
                     }
                 }, 1500);
             } else if (mode === 'register') {
@@ -82,6 +79,7 @@ export default function Auth({ onLoginSuccess }) {
                 setLoading(false);
             }
         } catch (err) {
+            // Lấy message lỗi từ backend trả về
             setError(err.response?.data?.message || 'Email hoặc mật khẩu không đúng');
             setLoading(false);
         }
@@ -123,11 +121,11 @@ export default function Auth({ onLoginSuccess }) {
             <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gray-50/50 relative">
 
                 {isSuccess && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md animate-in fade-in zoom-in">
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
                         <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce">
                             <CheckCircle2 size={48} />
                         </div>
-                        <h3 className="text-3xl font-black text-gray-900 text-center">Xác thực thành công!</h3>
+                        <h3 className="text-3xl font-black text-gray-900 text-center uppercase italic">Xác thực thành công!</h3>
                         <p className="text-gray-500 font-bold mt-2">Đang đưa bạn đến cửa hàng...</p>
                     </div>
                 )}
@@ -153,13 +151,13 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter mb-2 text-center">
+                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter mb-2 text-center uppercase italic">
                             {mode === 'login' ? 'Chào mừng trở lại!' : 'Bắt đầu ngay hôm nay'}
                         </h2>
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 bg-orange-50 text-orange-600 text-sm rounded-2xl border border-orange-100 font-bold flex items-center gap-3">
+                        <div className="mb-6 p-4 bg-orange-50 text-orange-600 text-sm rounded-2xl border border-orange-100 font-bold flex items-center gap-3 animate-in slide-in-from-top-2">
                             <div className="w-2 h-2 rounded-full bg-orange-600 shrink-0"></div>
                             {error}
                         </div>
@@ -167,7 +165,7 @@ export default function Auth({ onLoginSuccess }) {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {mode === 'register' && (
-                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4">
+                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-300">
                                 <div className="space-y-1.5">
                                     <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Họ</label>
                                     <input name="first_name" onChange={handleChange} required className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none transition-all font-bold" placeholder="Nguyễn" />
@@ -192,7 +190,7 @@ export default function Auth({ onLoginSuccess }) {
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                                 <input name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleChange} required className="w-full pl-12 pr-12 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none transition-all font-bold shadow-sm" placeholder="••••••••" />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600">
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors">
                                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
                             </div>
@@ -202,7 +200,7 @@ export default function Auth({ onLoginSuccess }) {
                             <div className="flex items-center justify-between px-1">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-gray-200 text-orange-600 focus:ring-orange-500 cursor-pointer transition-all" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                                    <span className="text-sm text-gray-500 font-black group-hover:text-gray-700">Lưu thông tin</span>
+                                    <span className="text-sm text-gray-500 font-black group-hover:text-gray-700 transition-colors">Lưu thông tin</span>
                                 </label>
                                 <button type="button" className="text-sm font-black text-orange-600 hover:underline">Quên mật khẩu?</button>
                             </div>

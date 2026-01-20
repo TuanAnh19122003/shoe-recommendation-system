@@ -58,7 +58,7 @@ const ProductDetail = () => {
                 v => v.color === selectedColor && v.size === selectedSize
             );
             setCurrentVariant(variant);
-            
+
             // Nếu tìm thấy biến thể cụ thể, track view cho biến thể đó
             if (variant) {
                 trackUserAction(variant.id, 'view');
@@ -174,7 +174,12 @@ const ProductDetail = () => {
                         </h1>
                         <div className="flex items-center gap-4">
                             <p className="text-4xl font-black text-blue-600 tracking-tighter italic">
-                                {currentVariant ? formatPrice(currentVariant.price) : formatPrice(product.variants[0].price)}
+                                {currentVariant
+                                    ? formatPrice(currentVariant.price)
+                                    : product.variants?.[0]
+                                        ? formatPrice(product.variants[0].price)
+                                        : formatPrice(0) // Fallback if no variants exist
+                                }
                             </p>
                             {!currentVariant && (
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-bounce">
